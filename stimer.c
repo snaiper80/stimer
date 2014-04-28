@@ -43,12 +43,13 @@
 #define TM_ENTRIES                LIST_ENTRY(tm_entry)
 #define TM_ENTRIES_HEAD           LIST_HEAD(tm_entries, tm_entry)
 
+// NOTE: Fixed compile error in linux
 #ifndef LIST_FOREACH_SAFE
 #define LIST_FOREACH_SAFE(var, head, field, tvar)                       \
         for ((var) = LIST_FIRST(head);                                  \
             (var) && ((tvar) = LIST_NEXT(var, field), 1);               \
             (var) = (tvar))
-#endif
+#endif /* ST_SAFE_FREE */
 
 // types
 struct tm_entry
