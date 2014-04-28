@@ -5,6 +5,8 @@ Simple Timer-Wheel Timer
 
 Base Algorithm
 ---
+Simple Timing Wheel
+http://www.cse.wustl.edu/~cdgill/courses/cs6874/TimingWheels.ppt
 http://gborah.wordpress.com/2011/08/01/timeout-management-using-hashed-timing-wheels/
 
 Notice
@@ -69,4 +71,5 @@ stimer started
 [+ 80] callback function was invoked: timer = 0x83c010, user data = 0x2
 [+ 90] callback function was invoked: timer = 0x83c010, user data = 0x2
 [+ 100] callback function was invoked: timer = 0x83c010, user data = 0x2
+stimer ended
 ```
