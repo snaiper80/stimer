@@ -52,3 +52,21 @@ printf("stimer ended\n");
 
 stimer_destroy(&timer);
 ```
+
+Result
+```
+stimer started
+[+ 02] callback function was invoked: timer = 0x83c010, user data = 0x1
+[+ 10] callback function was invoked: timer = 0x83c010, user data = 0x2
+[+ 20] callback function was invoked: timer = 0x83c010, user data = 0x2
+[+ 20] callback function was invoked: timer = 0x83c010, user data = 0x3
+[+ 30] callback function was invoked: timer = 0x83c010, user data = 0x2
+[+ 40] callback function was invoked: timer = 0x83c010, user data = 0x2
+[+ 50] callback function was invoked: timer = 0x83c010, user data = 0x2
+[+ 60] callback function was invoked: timer = 0x83c010, user data = 0x2
+[+ 65] callback function was invoked: timer = 0x83c010, user data = 0x4
+[+ 70] callback function was invoked: timer = 0x83c010, user data = 0x2
+[+ 80] callback function was invoked: timer = 0x83c010, user data = 0x2
+[+ 90] callback function was invoked: timer = 0x83c010, user data = 0x2
+[+ 100] callback function was invoked: timer = 0x83c010, user data = 0x2
+```
