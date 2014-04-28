@@ -2,3 +2,53 @@ stimer
 ======
 
 Simple Timer-Wheel Timer
+
+Base Algorithm
+---
+http://gborah.wordpress.com/2011/08/01/timeout-management-using-hashed-timing-wheels/
+
+Notice
+---
+* (Current) NOT Thread-safe code
+* NO Timer-scheduling code (maybe you needs scheduling thread)
+
+Supported Mode
+---
+* One-shot : Called once only
+* Periodic : Called repeatedly
+
+Compiling Test Code
+---
+```
+$) make
+```
+
+Usage
+---
+```c
+void timer_callback(stimer_t *timer, void *user_data)
+{
+    time_t origin = stimer_get_origin_time(timer);
+    double diff   = difftime(time(NULL), origin);
+    printf("[+ %02d] callback function was invoked: timer = %p, user data = %p\n", (int)diff, timer, user_data);
+}
+...
+stimer_t *timer = stimer_create(0);
+
+stimer_add_entry(timer, 2,  STIMER_ONESHOT_MODE, timer_callback, (void *)1);
+stimer_add_entry(timer, 10, STIMER_PERIODIC_MODE, timer_callback, (void *)2);
+stimer_add_entry(timer, 20, STIMER_ONESHOT_MODE, timer_callback, (void *)3);
+stimer_add_entry(timer, 65, STIMER_ONESHOT_MODE, timer_callback, (void *)4);
+
+printf("stimer started\n");
+
+while (total_tick--)
+{
+    stimer_schedule_on_tick(timer);
+    msleep(20);
+}
+
+printf("stimer ended\n");
+
+stimer_destroy(&timer);
+```
