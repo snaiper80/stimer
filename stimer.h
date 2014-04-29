@@ -1,5 +1,5 @@
 /*
-    Simple Timer-Wheel Timer (based on timer wheel algorithm)
+    Simple Timing-Wheel Timer
 
     The MIT License (MIT)
 
@@ -26,7 +26,7 @@
 #ifndef STIMER_H
 #define STIMER_H
 
-// pre-required header
+// prerequisite headers
 #include <time.h>
 
 typedef struct stimer stimer_t;
@@ -34,11 +34,12 @@ typedef void (*stimer_expired_callback_t)(stimer_t *timer, void *user_data);
 typedef enum {
     STIMER_ONESHOT_MODE = 0,
     STIMER_PERIODIC_MODE,
-} stimer_timer_mode;
+} stimer_mode_t;
 
 stimer_t * stimer_create(int timeslot);
 time_t     stimer_get_origin_time(stimer_t *timer);
-void       stimer_add_entry(stimer_t *timer, unsigned int delay, stimer_timer_mode mode, stimer_expired_callback_t callback, void *user_data);
+void       stimer_add_entry(stimer_t *timer, unsigned int delay, stimer_mode_t mode, stimer_expired_callback_t callback, void *user_data);
+void       stimer_cancel_all_entries(stimer_t *timer);
 void       stimer_schedule_on_tick(stimer_t *timer);
 void       stimer_destroy(stimer_t **timer);
 

@@ -1,5 +1,5 @@
 /*
-    Simple Timer-Wheel Timer (based on timer wheel algorithm)
+    Simple Timing-Wheel Timer
 
     The MIT License (MIT)
 
@@ -35,13 +35,16 @@
 #define ONE_MINUTES_TO_SECONDS          (60)           
 #define DEFAULT_TOTAL_TIME_SLOT         (60)
 
+
 // macros
 #ifndef ST_SAFE_FREE 
 #define ST_SAFE_FREE(p) { if (p) { free((p)); (p) = NULL; } } 
 #endif /* ST_SAFE_FREE */
 
+
 #define TM_ENTRIES                LIST_ENTRY(tm_entry)
 #define TM_ENTRIES_HEAD           LIST_HEAD(tm_entries, tm_entry)
+
 
 // NOTE: Fixed compile error in linux
 #ifndef LIST_FOREACH_SAFE
@@ -51,6 +54,8 @@
             (var) = (tvar))
 #endif /* ST_SAFE_FREE */
 
+
+
 // types
 struct tm_entry
 {
@@ -58,7 +63,7 @@ struct tm_entry
     time_t                        expired;
     unsigned int                  delay;
 
-    stimer_timer_mode             mode;
+    stimer_mode_t                 mode;
 
     stimer_expired_callback_t     callback;
     void                         *user_data;
@@ -83,6 +88,7 @@ struct stimer
     time_t                        origin;
 };
 
+
 /* Private */
 static int get_slot(stimer_t *timer, time_t now, int delay)
 {
@@ -100,7 +106,7 @@ static int get_slot(stimer_t *timer, time_t now, int delay)
     return slot_id;
 } 
 
-static void tm_entry_set(tm_entry_t *entry, time_t started, time_t expired, unsigned int delay, stimer_timer_mode mode, stimer_expired_callback_t callback, void *user_data)
+static void tm_entry_set(tm_entry_t *entry, time_t started, time_t expired, unsigned int delay, stimer_mode_t mode, stimer_expired_callback_t callback, void *user_data)
 {
     if (entry == NULL)
         return ;
@@ -118,12 +124,12 @@ static void tm_entry_reset(tm_entry_t *entry)
     tm_entry_set(entry, 0, 0, 0, STIMER_ONESHOT_MODE, NULL, NULL);
 }
 
-static tm_entry_t * tm_insert_entry_at_head(tm_slot_t *slot, 
-                                            time_t started, 
-                                            unsigned int delay, 
-                                            stimer_timer_mode mode, 
-                                            stimer_expired_callback_t callback, 
-                                            void *user_data)
+static tm_entry_t * tm_insert_entry_at_head(tm_slot_t                  *slot, 
+                                            time_t                      started, 
+                                            unsigned int                delay, 
+                                            stimer_mode_t               mode, 
+                                            stimer_expired_callback_t   callback, 
+                                            void                       *user_data)
 {
     tm_entry_t *new_entry = (tm_entry_t *)malloc(sizeof(tm_entry_t));
     tm_entry_reset(new_entry);
@@ -197,21 +203,17 @@ static void tm_slot_process_timeout(tm_slot_t *slot)
         {
             // slot has expired entry
             if (entry->callback)
-            {
                 entry->callback(timer, entry->user_data);
-            }
-
+            
             if (entry->mode == STIMER_PERIODIC_MODE)
-            {
                 tm_entry_make_next_expired(slot, entry);
-            }
-
+            
             LIST_REMOVE(entry, entries);
             ST_SAFE_FREE(entry);
         }
         else
         {
-            // entry is valid, so we passed this
+            // entry is valid, so we passed.
         }
     }
 }
@@ -227,19 +229,21 @@ stimer_t * stimer_create(int timeslot)
     
     new_timer                        = (stimer_t *)malloc(sizeof(*new_timer));
     new_timer->timeslot              = timeslot;
-    new_timer->slot_interval_seconds = ONE_MINUTES_TO_SECONDS / timeslot;
+    new_timer->slot_interval_seconds = (ONE_MINUTES_TO_SECONDS / timeslot);
     new_timer->slots                 = (tm_slot_t **)malloc(timeslot * sizeof(tm_slot_t *));
 
     for (i = 0; i < timeslot; ++i)
     {
         tm_slot_t *s = (tm_slot_t *)malloc(sizeof(tm_slot_t));
+        assert(s != NULL);
+        
         s->timer     = new_timer;
         LIST_INIT(&s->entries_head);
 
         new_timer->slots[i] = s;
     }
 
-    new_timer->origin                = time(NULL);
+    new_timer->origin = time(NULL);
     
     return new_timer;
 }
@@ -252,7 +256,7 @@ time_t stimer_get_origin_time(stimer_t *timer)
         return 0;
 }
 
-void stimer_add_entry(stimer_t *timer, unsigned int delay, stimer_timer_mode mode, stimer_expired_callback_t callback, void *user_data)
+void stimer_add_entry(stimer_t *timer, unsigned int delay, stimer_mode_t mode, stimer_expired_callback_t callback, void *user_data)
 {
     time_t      now;
     tm_slot_t  *slot  = NULL;
@@ -265,6 +269,33 @@ void stimer_add_entry(stimer_t *timer, unsigned int delay, stimer_timer_mode mod
     assert(slot);
 
     tm_insert_entry_at_head(slot, now, delay, mode, callback, user_data);
+}
+
+void stimer_cancel_all_entries(stimer_t *timer)
+{
+    unsigned int i;
+    tm_entry_t  *e1 = NULL, *e2 = NULL;
+
+    if (timer == NULL)
+        return ;
+
+    for (i = 0; i < timer->timeslot; ++i)
+    {
+        tm_slot_t *slot = timer->slots[i];
+        if (slot == NULL)
+            continue;
+        
+        // cleanup list
+        e1 = LIST_FIRST(&slot->entries_head);
+        while (e1 != NULL) 
+        {
+            e2 = LIST_NEXT(e1, entries);
+            ST_SAFE_FREE(e1);
+
+            e1 = e2;
+        }
+        LIST_INIT(&slot->entries_head);
+    }
 }
 
 void stimer_schedule_on_tick(stimer_t *timer)
@@ -293,9 +324,7 @@ void stimer_destroy(stimer_t **timer)
     {
         tm_slot_t *slot = (*timer)->slots[i];
         if (slot == NULL)
-        {
             continue;
-        }
         
         // cleanup list
         e1 = LIST_FIRST(&slot->entries_head);

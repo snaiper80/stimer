@@ -3,6 +3,8 @@
 #include <sys/time.h>
 #include "stimer.h"
 
+//#define TEST_CANCEL_ALL_TIME_ENTRY
+
 #define UNUSED(x) (void)(x)
 
 static void msleep (unsigned int ms)
@@ -43,6 +45,14 @@ int main(int argc, char *argv[])
         stimer_schedule_on_tick(timer);
         msleep(20);
         //sleep(1);
+
+#ifdef TEST_CANCEL_ALL_TIME_ENTRY
+        if (total_tick == 4000)
+        {
+            stimer_cancel_all_entries(timer);
+            printf("cancel all timer.\n");
+        }
+#endif
     }
 
     printf("stimer ended\n");
