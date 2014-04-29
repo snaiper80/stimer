@@ -1,7 +1,7 @@
 stimer
 ======
 
-Simple Timer-Wheel Timer
+Simple Timing-Wheel Timer
 
 Base Algorithm
 ---
