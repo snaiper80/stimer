@@ -37,10 +37,10 @@ void timer_callback(stimer_t *timer, void *user_data)
 ...
 stimer_t *timer = stimer_create(0);
 
-stimer_add_entry(timer, 2,  STIMER_ONESHOT_MODE, timer_callback, (void *)1);
-stimer_add_entry(timer, 10, STIMER_PERIODIC_MODE, timer_callback, (void *)2);
-stimer_add_entry(timer, 20, STIMER_ONESHOT_MODE, timer_callback, (void *)3);
-stimer_add_entry(timer, 65, STIMER_ONESHOT_MODE, timer_callback, (void *)4);
+stimer_schedule_entry(timer, 2,  STIMER_ONESHOT_MODE, timer_callback, (void *)1);
+stimer_schedule_entry(timer, 10, STIMER_PERIODIC_MODE, timer_callback, (void *)2);
+stimer_schedule_entry(timer, 20, STIMER_ONESHOT_MODE, timer_callback, (void *)3);
+stimer_schedule_entry(timer, 65, STIMER_ONESHOT_MODE, timer_callback, (void *)4);
 
 printf("stimer started\n");
 

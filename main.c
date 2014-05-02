@@ -4,6 +4,7 @@
 #include "stimer.h"
 
 //#define TEST_CANCEL_ALL_TIME_ENTRY
+//#define TEST_CANCEL_ONE_TIME_ENTRY
 
 #define UNUSED(x) (void)(x)
 
@@ -28,15 +29,17 @@ int main(int argc, char *argv[])
 {
     int       total_tick = 5000;
     //int       total_tick = 100;
-    stimer_t *timer      = stimer_create(0);
+    stimer_t *timer       = stimer_create(0);
+    stimer_entry_t *entry = NULL;
 
     UNUSED(argc);
     UNUSED(argv);
 
-    stimer_add_entry(timer, 2,  STIMER_ONESHOT_MODE, timer_callback, (void *)1);
-    stimer_add_entry(timer, 10, STIMER_PERIODIC_MODE, timer_callback, (void *)2);
-    stimer_add_entry(timer, 20, STIMER_ONESHOT_MODE, timer_callback, (void *)3);
-    stimer_add_entry(timer, 65, STIMER_ONESHOT_MODE, timer_callback, (void *)4);
+    stimer_schedule_entry(timer, 2,  STIMER_ONESHOT_MODE, timer_callback, (void *)1);
+    stimer_schedule_entry(timer, 10, STIMER_PERIODIC_MODE, timer_callback, (void *)2);
+    stimer_schedule_entry(timer, 20, STIMER_ONESHOT_MODE, timer_callback, (void *)3);
+
+    entry = stimer_schedule_entry(timer, 65, STIMER_ONESHOT_MODE, timer_callback, (void *)4);
 
     printf("stimer started\n");
 
@@ -51,6 +54,14 @@ int main(int argc, char *argv[])
         {
             stimer_cancel_all_entries(timer);
             printf("cancel all timer.\n");
+        }
+#endif
+
+#ifdef TEST_CANCEL_ONE_TIME_ENTRY
+        if (total_tick == 4000)
+        {
+            printf("cancel 1 time entry.\n");
+            stimer_cancel_entry(timer, entry);
         }
 #endif
     }
