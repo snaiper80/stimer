@@ -15,7 +15,7 @@ static void msleep (unsigned int ms)
     microsecs = ms * 1000;
     tv.tv_sec  = microsecs / 1000000;
     tv.tv_usec = microsecs % 1000000;
-    select (0, NULL, NULL, NULL, &tv);  
+    select (0, NULL, NULL, NULL, &tv);
 }
 
 void timer_callback(stimer_t *timer, void *user_data)
@@ -27,10 +27,10 @@ void timer_callback(stimer_t *timer, void *user_data)
 
 int main(int argc, char *argv[])
 {
-    int       total_tick = 5000;
-    //int       total_tick = 100;
-    stimer_t *timer       = stimer_create(0);
-    stimer_entry_t *entry = NULL;
+    int                total_tick  = 5000;
+    //int              total_tick  = 100;
+    stimer_t          *timer       = stimer_create(0);
+    stimer_entry_id_t  entry_id    = 0;
 
     UNUSED(argc);
     UNUSED(argv);
@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
     stimer_schedule_entry(timer, 10, STIMER_PERIODIC_MODE, timer_callback, (void *)2);
     stimer_schedule_entry(timer, 20, STIMER_ONESHOT_MODE, timer_callback, (void *)3);
 
-    entry = stimer_schedule_entry(timer, 65, STIMER_ONESHOT_MODE, timer_callback, (void *)4);
+    entry_id = stimer_schedule_entry(timer, 65, STIMER_ONESHOT_MODE, timer_callback, (void *)4);
 
     printf("stimer started\n");
 
@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
         if (total_tick == 4000)
         {
             printf("cancel 1 time entry.\n");
-            stimer_cancel_entry(timer, entry);
+            stimer_cancel_entry(timer, entry_id);
         }
 #endif
     }
