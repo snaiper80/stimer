@@ -23,7 +23,10 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 */
+
+// #define DEBUG // Define DEBUG explicitly here before including stimer.h - Removing for now
 #include "stimer.h"
+#include <stdio.h> // For fprintf in trace_debug (or other printf later)
 
 // includes - standard library
 #include <stdlib.h>
@@ -102,7 +105,10 @@ static int get_slot(stimer_t *timer, time_t now, int delay)
 
     total_time = now + delay;
     diff       = difftime(timer->origin, total_time);
-    slot_id    = (int)(diff / timer->slot_interval_seconds) % timer->timeslot;
+    // slot_id    = (int)(diff / timer->slot_interval_seconds) % timer->timeslot;
+    int interim_slot_id = (int)(diff / timer->slot_interval_seconds);
+    slot_id = ((interim_slot_id % timer->timeslot) + timer->timeslot) % timer->timeslot; // Use existing slot_id
+    // trace_debug("diff from origin: %f, interim_slot_id: %d, slot_id: %d\n", diff, interim_slot_id, slot_id); // Removed for now to resolve linking issue
 
     return slot_id;
 }
