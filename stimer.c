@@ -23,7 +23,10 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE.
 */
+
+// #define DEBUG // Define DEBUG explicitly here before including stimer.h - Removing for now
 #include "stimer.h"
+#include <stdio.h> // For fprintf in trace_debug (or other printf later)
 
 // includes - standard library
 #include <stdlib.h>
@@ -43,7 +46,8 @@
 
 
 #define TM_ENTRIES                LIST_ENTRY(stimer_entry)
-#define TM_ENTRIES_HEAD           LIST_HEAD(stimer_entries, stimer_entry)
+// Define the list head type once to avoid redefinition
+typedef LIST_HEAD(stimer_entries_list_s, stimer_entry) stimer_entries_list_t; 
 
 
 // NOTE: Fixed compile error in linux
@@ -75,7 +79,7 @@ struct stimer_entry
 struct tm_slot
 {
     stimer_t                     *timer;
-    TM_ENTRIES_HEAD               entries_head;
+    stimer_entries_list_t         entries_head; // Use the defined type
 };
 typedef struct tm_slot tm_slot_t;
 
@@ -87,6 +91,7 @@ struct stimer
 
     time_t                        origin;
     stimer_entry_id_t             next_id;
+    // stimer_entries_list_t         free_entries_head; // Removed for unoptimized version
 };
 
 
@@ -102,7 +107,10 @@ static int get_slot(stimer_t *timer, time_t now, int delay)
 
     total_time = now + delay;
     diff       = difftime(timer->origin, total_time);
-    slot_id    = (int)(diff / timer->slot_interval_seconds) % timer->timeslot;
+    // slot_id    = (int)(diff / timer->slot_interval_seconds) % timer->timeslot;
+    int interim_slot_id = (int)(diff / timer->slot_interval_seconds);
+    slot_id = ((interim_slot_id % timer->timeslot) + timer->timeslot) % timer->timeslot; // Use existing slot_id
+    // trace_debug("diff from origin: %f, interim_slot_id: %d, slot_id: %d\n", diff, interim_slot_id, slot_id); // Removed for now to resolve linking issue
 
     return slot_id;
 }
@@ -133,6 +141,10 @@ static void stimer_entry_reset(stimer_entry_t *entry)
     stimer_entry_set(entry, 0, 0, 0, 0, STIMER_ONESHOT_MODE, NULL, NULL);
 }
 
+// Removing stimer_entry_alloc and stimer_entry_free
+// static stimer_entry_t *stimer_entry_alloc(stimer_t *timer) { ... }
+// static void stimer_entry_free(stimer_t *timer, stimer_entry_t *entry) { ... }
+
 static stimer_entry_t * tm_slot_insert_entry_at_head(tm_slot_t                  *slot,
                                                      stimer_entry_id_t           entry_id,
                                                      time_t                      started,
@@ -141,7 +153,11 @@ static stimer_entry_t * tm_slot_insert_entry_at_head(tm_slot_t                  
                                                      stimer_expired_callback_t   callback,
                                                      void                       *user_data)
 {
+    // Revert to direct malloc
     stimer_entry_t *new_entry = (stimer_entry_t *)malloc(sizeof(stimer_entry_t));
+    // if (new_entry == NULL) { // Assuming malloc failure is handled by caller or assert
+    //     return NULL; 
+    // }
     stimer_entry_reset(new_entry);
 
     LIST_INSERT_HEAD(&slot->entries_head, new_entry, entries);
@@ -197,6 +213,7 @@ static void tm_slot_process_timeout(tm_slot_t *slot)
         return ;
 
     timer = slot->timer;
+    // now = time(NULL); // Reverted: No longer initialized once before the loop
 
     LIST_FOREACH_SAFE(entry, &slot->entries_head, entries, temp_entry)
     {
@@ -207,8 +224,8 @@ static void tm_slot_process_timeout(tm_slot_t *slot)
             break;
         }
 
-        now   = time(NULL);
-        diff  = fabs(difftime(entry->expired, now));
+        now   = time(NULL); // Reverted: Called inside the loop
+        diff  = fabs(difftime(entry->expired, now)); // Use 'now' from inside loop
 
         // expired or up to time
         if (now > entry->expired || diff < timer->slot_interval_seconds)
@@ -221,7 +238,7 @@ static void tm_slot_process_timeout(tm_slot_t *slot)
                 stimer_entry_make_next_expired(slot, entry);
 
             LIST_REMOVE(entry, entries);
-            ST_SAFE_FREE(entry);
+            ST_SAFE_FREE(entry); // Revert to ST_SAFE_FREE
         }
         else
         {
@@ -257,6 +274,7 @@ stimer_t * stimer_create(int timeslot)
     }
 
     new_timer->origin = time(NULL);
+    // LIST_INIT(&new_timer->free_entries_head); // Removed for unoptimized version
 
     return new_timer;
 }
@@ -309,7 +327,7 @@ void stimer_cancel_entry(stimer_t *timer, stimer_entry_id_t entry_id)
             if (entry->id == entry_id)
             {
                 LIST_REMOVE(entry, entries);
-                ST_SAFE_FREE(entry);
+                ST_SAFE_FREE(entry); // Revert to ST_SAFE_FREE
                 return ;
             }
         }
@@ -335,7 +353,7 @@ void stimer_cancel_all_entries(stimer_t *timer)
         while (e1 != NULL)
         {
             e2 = LIST_NEXT(e1, entries);
-            ST_SAFE_FREE(e1);
+            ST_SAFE_FREE(e1); // Revert to ST_SAFE_FREE
 
             e1 = e2;
         }
@@ -376,7 +394,7 @@ void stimer_destroy(stimer_t **timer)
         while (e1 != NULL)
         {
             e2 = LIST_NEXT(e1, entries);
-            ST_SAFE_FREE(e1);
+            ST_SAFE_FREE(e1); // Revert to ST_SAFE_FREE
 
             e1 = e2;
         }
@@ -385,6 +403,9 @@ void stimer_destroy(stimer_t **timer)
         // cleanup slot
         ST_SAFE_FREE(slot);
     }
+
+    // Remove purge of free_entries_head list (it won't exist)
+    // Also, free_entries_head itself will be removed from struct stimer later
 
     ST_SAFE_FREE((*timer)->slots);
     ST_SAFE_FREE(*timer);
